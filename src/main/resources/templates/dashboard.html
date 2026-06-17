@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+    <meta name="description" content=""/>
+    <meta name="author" content=""/>
+    <title>Операции</title>
+    <link rel="icon" type="image/x-icon" th:href="@{/assets/favicon.ico}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body id="page-top">
+<div th:replace="fragments/navbar :: navbar('no', 'no', 'no', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes')"></div>
+<div class="container mt-3 pt-3">
+
+    <h2 class="text-center mb-5 mt-4">
+        Операции
+    </h2>
+
+    <div class="card shadow-sm mb-4 filter-card">
+        <div class="card-header filter-header">
+            <span>Фильтры</span>
+            <i class="fa-solid fa-chevron-down" id="filterArrow"></i>
+        </div>
+        <div class="card-body filter-body">
+            <form method="get"
+                  th:action="@{/dashboard}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label>Тип операций</label>
+                        <select class="form-select" name="operationType">
+                            <option value="all" th:selected="${selectedOperationType == 'all'}">Все</option>
+                            <option value="income" th:selected="${selectedOperationType == 'income'}">Доходы</option>
+                            <option value="expense" th:selected="${selectedOperationType == 'expense'}">Расходы</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>Категория</label>
+                        <select class="form-select" name="category">
+                            <option value="all">
+                                Все категории
+                            </option>
+                            <option
+                                    th:each="category : ${categories}"
+                                    th:value="${category.name}"
+                                    th:text="${category.name}">
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>Сумма от</label>
+                        <input
+                                type="number"
+                                step="0.01"
+                                class="form-control"
+                                name="amountFrom">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Сумма до</label>
+                        <input
+                                type="number"
+                                step="0.01"
+                                class="form-control"
+                                name="amountTo">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Дата с</label>
+                        <input
+                                type="date"
+                                class="form-control"
+                                name="dateFrom">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Дата по</label>
+                        <input
+                                type="date"
+                                class="form-control"
+                                name="dateTo">
+                    </div>
+                    <div class="col-12 col-md-3 d-flex align-items-end">
+                        <button
+                                type="submit"
+                                class="btn btn-primary w-100">
+                            Применить
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-4 text-center">
+            <canvas id="financeChart"></canvas>
+            <div class="card mt-5">
+                <div class="card-header">
+                    Последние операции
+                </div>
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center"
+                            th:each="operation : ${operations}">
+                        <div class="operation-info">
+                            <div class="fw-bold"
+                                 th:text="${operation.category}">
+                            </div>
+                            <small class="text-muted"
+                                   th:text="${#temporals.format(operation.dateTime,'dd.MM.yyyy HH:mm')}">
+                            </small>
+                        </div>
+                        <div class="operation-amount text-nowrap">
+                            <span
+                                th:if="${operation.type == 'INCOME'}"
+                                class="text-success fw-bold"
+                                th:text="'+' + ${operation.amount} + '₽'">
+                            </span>
+                            <span
+                                th:if="${operation.type == 'EXPENSE'}"
+                                class="fw-bold"
+                                th:text="'-' + ${operation.amount} + '₽'">
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <nav th:if="${totalElements > 5}" class="card-footer bg-white">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
+                            <a class="page-link" th:href="@{/dashboard(page=${currentPage - 1}, operationType=${param.operationType}, category=${param.category}, amountFrom=${param.amountFrom}, amountTo=${param.amountTo}, dateFrom=${param.dateFrom}, dateTo=${param.dateTo})}">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link" th:text="${currentPage}">1</span>
+                        </li>
+                        <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
+                            <a class="page-link" th:href="@{/dashboard(page=${currentPage + 1}, operationType=${param.operationType}, category=${param.category}, amountFrom=${param.amountFrom}, amountTo=${param.amountTo}, dateFrom=${param.dateFrom}, dateTo=${param.dateTo})}">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script th:inline="javascript">
+
+    const incomeData =
+    [[${incomeCategories.values()}]];
+
+    const expenseData =
+    [[${expenseCategories.values()}]];
+
+    const incomeLabels =
+    [[${incomeCategories.keySet()}]];
+
+    const expenseLabels =
+    [[${expenseCategories.keySet()}]];
+
+    const labels =
+    [
+    ...incomeLabels,
+    ...expenseLabels
+    ];
+
+    const values =
+    [
+    ...incomeData,
+    ...expenseData
+    ];
+
+    const balance =
+    '[[${balance}]]';
+
+    const centerText = {
+
+        id: 'centerText',
+
+        afterDraw(chart) {
+
+            const {
+                ctx,
+                chartArea: {left, right, top, bottom}
+            } = chart;
+
+            const centerX = (left + right) / 2;
+            const centerY = (top + bottom) / 2;
+
+            ctx.save();
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.font = 'bold 16px Arial';
+
+            ctx.fillText(
+                'Баланс',
+                centerX,
+                centerY - 15
+            );
+
+            ctx.font = 'bold 20px Arial';
+
+            ctx.fillText(
+                balance,
+                centerX,
+                centerY + 15
+            );
+
+            ctx.restore();
+        }
+    };
+
+    new Chart(
+    document.getElementById('financeChart'),
+    {
+        type: 'doughnut',
+
+        data: {
+            labels: labels,
+
+            datasets: [{
+                data: values
+            }]
+        },
+
+        plugins: [centerText],
+
+        options: {
+            responsive: true,
+            cutout: '65%'
+        }
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const header = document.querySelector(".filter-header");
+        const body = document.querySelector(".filter-body");
+        const arrow = document.getElementById("filterArrow");
+
+        const isCollapsed = localStorage.getItem('filterCollapsed') === 'true';
+        if (isCollapsed) {
+            body.classList.add("collapsed");
+            arrow.classList.add("fa-rotate-180");
+        }
+
+        header.addEventListener("click", function () {
+            body.classList.toggle("collapsed");
+            arrow.classList.toggle("fa-rotate-180");
+
+            const nowCollapsed = body.classList.contains("collapsed");
+            localStorage.setItem('filterCollapsed', nowCollapsed);
+        });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const operationTypeSelect = document.querySelector('select[name="operationType"]');
+        const categorySelect = document.querySelector('select[name="category"]');
+
+        function updateCategories(type) {
+            fetch(`/dashboard/categories?type=${type}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Ошибка сети');
+                    }
+                    return response.json();
+                })
+                .then(categories => {
+                    const currentCategory = categorySelect.value;
+
+                    categorySelect.innerHTML = '<option value="all">Все категории</option>';
+
+                    categories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.name;
+                        option.textContent = category.name;
+                        categorySelect.appendChild(option);
+                    });
+
+                    if (currentCategory && currentCategory !== 'all') {
+                        const options = Array.from(categorySelect.options);
+                        if (options.some(opt => opt.value === currentCategory)) {
+                            categorySelect.value = currentCategory;
+                        }
+                    }
+                })
+                .catch(error => console.error('Ошибка загрузки категорий:', error));
+        }
+        operationTypeSelect.addEventListener("change", function () {
+            updateCategories(this.value);
+        });
+    });
+</script>
+</body>
+</html>

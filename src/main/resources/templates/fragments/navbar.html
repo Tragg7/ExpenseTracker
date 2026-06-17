@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<nav class="navbar navbar-expand-lg bg-secondary text-uppercase" id="mainNav"
+     th:fragment="navbar(showAbout, showIn, showUp, allOp, showAcc, showList, showIncomeList, showAdd, showAddIncome,showProfile)">
+    <div class="container">
+        <a class="navbar-brand" th:href="@{/}">Трекер трат</a>
+        <button class="navbar-toggler text-uppercase font-weight-bold bg-primary text-white rounded" type="button"
+                data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive"
+                aria-expanded="false" aria-label="Toggle navigation">
+            Меню
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ms-auto">
+                <li th:if="${showAbout == 'yes'}" class="nav-item mx-0 mx-lg-1">
+                    <a class="nav-link py-3 px-0 px-lg-3 rounded" href="#about">О нас</a>
+                </li>
+                <li th:if="${showIn == 'yes'}" class="nav-item mx-0 mx-lg-1" style="cursor: pointer;">
+                    <a class="nav-link py-3 px-0 px-lg-3 rounded" th:href="@{/showLoginPage}">Войти</a>
+                </li>
+                <li th:if="${showUp == 'yes'}" class="nav-item mx-0 mx-lg-1" style="cursor: pointer;">
+                    <a class="nav-link py-3 px-0 px-lg-3 rounded" th:href="@{/showRegistrationForm}">Зарегистрироваться</a>
+                </li>
+                <li th:if="${allOp == 'yes'}" class="nav-item mx-0 mx-lg-1">
+                    <a class="nav-link py-3 px-0 px-lg-3 rounded"
+                       th:href="@{/dashboard}">
+                        Все операции
+                    </a>
+                </li>
+                <li th:if="${showAcc == 'yes'}" class="nav-item mx-0 mx-lg-1" style="cursor: pointer;">
+                    <a class="nav-link py-3 px-0 px-lg-3 rounded"th:href="@{/accounts/list}">Счета</a>
+                </li>
+                <li th:if="${showList == 'yes'}" class="nav-item mx-0 mx-lg-1" style="cursor: pointer;">
+                    <a class="nav-link py-3 px-0 px-lg-3 rounded" th:href="@{/list}">Траты</a>
+                </li>
+                <li th:if="${showIncomeList == 'yes'}" class="nav-item mx-0 mx-lg-1" style="cursor: pointer;">
+                    <a class="nav-link py-3 px-0 px-lg-3 rounded" th:href="@{/income/list}">Доходы</a>
+                </li>
+                <li th:if="${showAdd == 'yes'}" class="nav-item mx-0 mx-lg-1" style="cursor: pointer;">
+                    <a class="nav-link py-3 px-0 px-lg-3 rounded" th:href="@{/showAdd}">Добавить траты</a>
+                </li>
+                <li th:if="${showAdd == 'yes'}" class="nav-item mx-0 mx-lg-1" style="cursor: pointer;">
+                    <a class="nav-link py-3 px-0 px-lg-3 rounded" th:href="@{/income/showAdd}">Добавить доходы</a>
+                </li>
+                <div class="sidebar-footer">
+                    <li th:if="${showProfile == 'yes'}" class="nav-item mx-0 mx-lg-1" style="cursor: pointer;">
+                        <form th:action="@{/logout}" method="post" class="nav-link py-3 px-0 px-lg-3 rounded"
+                              style="color:white;">
+                            <i class="fa-solid fa-arrow-right-from-bracket fa-1x"
+                               style="margin-right: 7px; color:white;">
+                            </i>
+                            <input type="submit" value="logout" style="background-color: transparent; border: none; cursor: pointer;font-weight: 600;font-size: 17px; color: white;margin-top: -7px;margin-left: -9px;"/>
+                        </form>
+                    </li>
+                </div>
+            </ul>
+        </div>
+    </div>
+</nav>
+</body>
+</html>
