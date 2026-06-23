@@ -95,7 +95,6 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
             return amount;
         }
 
-        // Конвертация: fromCurrency -> RUB -> toCurrency
         BigDecimal rubAmount = amount.multiply(getRateToRub(fromCurrency))
                 .setScale(4, RoundingMode.HALF_UP);
 

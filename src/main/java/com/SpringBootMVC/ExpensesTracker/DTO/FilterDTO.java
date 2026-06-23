@@ -6,6 +6,18 @@ public class FilterDTO {
     private Integer to;
     private String month;
     private String year;
+    private Integer accountId;
+
+    public FilterDTO() {
+    }
+
+    public Integer getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(Integer accountId) {
+        this.accountId = accountId;
+    }
 
     public String getCategory() {
         return category;

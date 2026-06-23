@@ -18,7 +18,17 @@ public class DashboardFilterDTO {
 
     private String operationType;
 
+    private Integer accountId;
+
     public DashboardFilterDTO() {
+    }
+
+    public Integer getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(Integer accountId) {
+        this.accountId = accountId;
     }
 
     public String getOperationType() {

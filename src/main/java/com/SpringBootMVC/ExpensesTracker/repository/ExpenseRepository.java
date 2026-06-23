@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Integer> {
     List<Expense> findByClientId(int id);
+    List<Expense> findByAccountId(int accountId);
 }

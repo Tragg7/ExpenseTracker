@@ -9,20 +9,29 @@ public class OperationDTO {
     private String category;
     private BigDecimal amount;
     private LocalDateTime dateTime;
+    private String accountName;
+    private String accountCurrency;
+    private BigDecimal amountInRub;
 
     public OperationDTO() {
     }
 
-    public OperationDTO(
-            String type,
-            String category,
-            BigDecimal amount,
-            LocalDateTime dateTime) {
-
+    public OperationDTO(String type, String category, BigDecimal amount, LocalDateTime dateTime) {
         this.type = type;
         this.category = category;
         this.amount = amount;
         this.dateTime = dateTime;
+    }
+
+    public OperationDTO(String type, String category, BigDecimal amount, LocalDateTime dateTime,
+                        String accountName, String accountCurrency, BigDecimal amountInRub) {
+        this.type = type;
+        this.category = category;
+        this.amount = amount;
+        this.dateTime = dateTime;
+        this.accountName = accountName;
+        this.accountCurrency = accountCurrency;
+        this.amountInRub = amountInRub;
     }
 
     public String getType() {
@@ -55,5 +64,29 @@ public class OperationDTO {
 
     public void setDateTime(LocalDateTime dateTime) {
         this.dateTime = dateTime;
+    }
+
+    public String getAccountName() {
+        return accountName;
+    }
+
+    public void setAccountName(String accountName) {
+        this.accountName = accountName;
+    }
+
+    public String getAccountCurrency() {
+        return accountCurrency;
+    }
+
+    public void setAccountCurrency(String accountCurrency) {
+        this.accountCurrency = accountCurrency;
+    }
+
+    public BigDecimal getAmountInRub() {
+        return amountInRub;
+    }
+
+    public void setAmountInRub(BigDecimal amountInRub) {
+        this.amountInRub = amountInRub;
     }
 }

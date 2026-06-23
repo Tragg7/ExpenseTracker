@@ -9,6 +9,7 @@ import com.SpringBootMVC.ExpensesTracker.repository.ClientRepository;
 import com.SpringBootMVC.ExpensesTracker.repository.RoleRepository;
 import com.SpringBootMVC.ExpensesTracker.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -23,21 +24,13 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    UserRepository userRepository;
-    RoleService roleService;
-    ClientService clientService;
-    PasswordEncoder passwordEncoder;
-
-    @Autowired
-    public UserServiceImpl(UserRepository userRepository, RoleService roleService, ClientService clientService, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.roleService = roleService;
-        this.clientService = clientService;
-        this.passwordEncoder = passwordEncoder;
-    }
-
+    private final UserRepository userRepository;
+    private final RoleService roleService;
+    private final ClientService clientService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public User findUserByUserName(String username) {

@@ -2,6 +2,7 @@ package com.SpringBootMVC.ExpensesTracker.controller;
 
 import com.SpringBootMVC.ExpensesTracker.DTO.DashboardFilterDTO;
 import com.SpringBootMVC.ExpensesTracker.DTO.OperationDTO;
+import com.SpringBootMVC.ExpensesTracker.entity.Account;
 import com.SpringBootMVC.ExpensesTracker.entity.Category;
 import com.SpringBootMVC.ExpensesTracker.entity.Client;
 import com.SpringBootMVC.ExpensesTracker.entity.Expense;
@@ -9,8 +10,10 @@ import com.SpringBootMVC.ExpensesTracker.entity.Income;
 import com.SpringBootMVC.ExpensesTracker.repository.CategoryRepository;
 import com.SpringBootMVC.ExpensesTracker.repository.ExpenseRepository;
 import com.SpringBootMVC.ExpensesTracker.repository.IncomeRepository;
+import com.SpringBootMVC.ExpensesTracker.service.AccountService;
+import com.SpringBootMVC.ExpensesTracker.service.ExchangeRateService;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,17 +26,14 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Controller
+@RequiredArgsConstructor
 public class DashboardController {
-    @Autowired
-    private CategoryRepository categoryRepository;
+    private final CategoryRepository categoryRepository;
+    private final ExpenseRepository expenseRepository;
+    private final IncomeRepository incomeRepository;
+    private final AccountService accountService;
+    private final ExchangeRateService exchangeRateService;
 
-    @Autowired
-    private ExpenseRepository expenseRepository;
-
-    @Autowired
-    private IncomeRepository incomeRepository;
-
-    // НОВЫЙ МЕТОД для AJAX-запроса категорий
     @GetMapping("/dashboard/categories")
     @ResponseBody
     public List<Category> getCategoriesByType(@RequestParam(required = false) String type) {
@@ -58,10 +58,10 @@ public class DashboardController {
             @RequestParam(required = false) BigDecimal amountTo,
             @RequestParam(required = false) String dateFrom,
             @RequestParam(required = false) String dateTo,
+            @RequestParam(required = false) Integer accountId,
             HttpSession session,
             Model model) {
 
-        // Нормализуем пустые строки в null
         operationType = isEmpty(operationType) ? "all" : operationType;
         category = isEmpty(category) ? null : category;
         dateFrom = isEmpty(dateFrom) ? null : dateFrom;
@@ -73,7 +73,6 @@ public class DashboardController {
 
         Client client = (Client) session.getAttribute("client");
 
-        // Получаем категории в зависимости от выбранного типа операции
         List<Category> categories;
         if ("income".equals(operationType)) {
             categories = categoryRepository.findByType("INCOME");
@@ -83,7 +82,11 @@ public class DashboardController {
             categories = categoryRepository.findAll();
         }
         model.addAttribute("categories", categories);
-        model.addAttribute("selectedOperationType", operationType); // Для сохранения выбора в форме
+        model.addAttribute("selectedOperationType", operationType);
+
+        List<Account> accounts = accountService.findActiveAccountsByClientId(client.getId());
+        model.addAttribute("accounts", accounts);
+        model.addAttribute("selectedAccountId", accountId);
 
         List<Expense> expenses = expenseRepository.findByClientId(client.getId());
         List<Income> incomes = incomeRepository.findByClientId(client.getId());
@@ -95,11 +98,13 @@ public class DashboardController {
         filter.setAmountTo(amountTo);
         filter.setDateFrom(dateFrom);
         filter.setDateTo(dateTo);
+        filter.setAccountId(accountId);
 
         boolean hasFilter = (operationType != null && !"all".equals(operationType)) ||
                 (category != null && !"all".equals(category)) ||
                 amountFrom != null || amountTo != null ||
-                dateFrom != null || dateTo != null;
+                dateFrom != null || dateTo != null ||
+                accountId != null;
 
         if (hasFilter) {
             expenses = filterExpenses(expenses, filter);
@@ -123,7 +128,7 @@ public class DashboardController {
             }
         }
 
-        return buildDashboard(expenses, incomes, model, page);
+        return buildDashboard(expenses, incomes, model, page, client);
     }
 
     private boolean isEmpty(String str) {
@@ -134,6 +139,13 @@ public class DashboardController {
         if ("income".equals(filter.getOperationType())) {
             return List.of();
         }
+
+        if (filter.getAccountId() != null) {
+            expenses = expenses.stream()
+                    .filter(e -> e.getAccount() != null && e.getAccount().getId() == filter.getAccountId())
+                    .toList();
+        }
+
         if (!isEmpty(filter.getCategory()) && !"all".equals(filter.getCategory())) {
             expenses = expenses.stream()
                     .filter(e -> e.getCategory().getName().equals(filter.getCategory()))
@@ -168,6 +180,13 @@ public class DashboardController {
         if ("expense".equals(filter.getOperationType())) {
             return List.of();
         }
+
+        if (filter.getAccountId() != null) {
+            incomes = incomes.stream()
+                    .filter(i -> i.getAccount() != null && i.getAccount().getId() == filter.getAccountId())
+                    .toList();
+        }
+
         if (!isEmpty(filter.getCategory()) && !"all".equals(filter.getCategory())) {
             incomes = incomes.stream()
                     .filter(i -> i.getCategory().getName().equals(filter.getCategory()))
@@ -198,7 +217,7 @@ public class DashboardController {
         return incomes;
     }
 
-    private String buildDashboard(List<Expense> expenses, List<Income> incomes, Model model, int page) {
+    private String buildDashboard(List<Expense> expenses, List<Income> incomes, Model model, int page, Client client) {
         BigDecimal totalExpense = BigDecimal.ZERO;
         BigDecimal totalIncome = BigDecimal.ZERO;
 
@@ -207,17 +226,72 @@ public class DashboardController {
         List<OperationDTO> operations = new ArrayList<>();
 
         for (Expense expense : expenses) {
-            totalExpense = totalExpense.add(expense.getAmount());
+            if (expense.getCategory() == null) {
+                System.out.println("⚠️ Пропущена операция expense id=" + expense.getId() + " - категория null");
+                continue;
+            }
+
+            BigDecimal amountInRub = expense.getAmount();
+            if (expense.getAccount() != null) {
+                amountInRub = exchangeRateService.convertToRub(
+                        expense.getAmount(),
+                        expense.getAccount().getCurrency()
+                );
+            }
+
+            totalExpense = totalExpense.add(amountInRub);
             String category = expense.getCategory().getName();
-            expenseMap.put(category, expenseMap.getOrDefault(category, BigDecimal.ZERO).add(expense.getAmount()));
-            operations.add(new OperationDTO("EXPENSE", expense.getCategory().getName(), expense.getAmount(), expense.getDateTime()));
+            expenseMap.put(category, expenseMap.getOrDefault(category, BigDecimal.ZERO).add(amountInRub));
+
+            String accountName = expense.getAccount() != null ? expense.getAccount().getName() : "Без счёта";
+            String accountCurrency = expense.getAccount() != null ? expense.getAccount().getCurrency() : "RUB";
+
+            operations.add(new OperationDTO(
+                    "EXPENSE",
+                    category,
+                    expense.getAmount(),
+                    expense.getDateTime(),
+                    accountName,
+                    accountCurrency,
+                    amountInRub
+            ));
         }
 
         for (Income income : incomes) {
-            totalIncome = totalIncome.add(income.getAmount());
-            String category = income.getCategory().getName();
-            incomeMap.put(category, incomeMap.getOrDefault(category, BigDecimal.ZERO).add(income.getAmount()));
-            operations.add(new OperationDTO("INCOME", income.getCategory().getName(), income.getAmount(), income.getDateTime()));
+            if (income.getCategory() == null) {
+                System.out.println("⚠️ Пропущена операция income id=" + income.getId() + " - категория null");
+                continue;
+            }
+
+            BigDecimal amountInRub = income.getAmount();
+            if (income.getAccount() != null) {
+                amountInRub = exchangeRateService.convertToRub(
+                        income.getAmount(),
+                        income.getAccount().getCurrency()
+                );
+            }
+
+            totalIncome = totalIncome.add(amountInRub);
+
+            boolean isInitialBalance = Boolean.TRUE.equals(income.getIsInitialBalance());
+
+            if (!isInitialBalance) {
+                String category = income.getCategory().getName();
+                incomeMap.put(category, incomeMap.getOrDefault(category, BigDecimal.ZERO).add(amountInRub));
+            }
+
+            String accountName = income.getAccount() != null ? income.getAccount().getName() : "Без счёта";
+            String accountCurrency = income.getAccount() != null ? income.getAccount().getCurrency() : "RUB";
+
+            operations.add(new OperationDTO(
+                    "INCOME",
+                    isInitialBalance ? "Начальный баланс" : income.getCategory().getName(),
+                    income.getAmount(),
+                    income.getDateTime(),
+                    accountName,
+                    accountCurrency,
+                    amountInRub
+            ));
         }
 
         operations.sort(Comparator.comparing(OperationDTO::getDateTime).reversed());
@@ -236,9 +310,11 @@ public class DashboardController {
                 ? operations.subList(fromIndex, toIndex)
                 : new ArrayList<>();
 
+        BigDecimal balance = accountService.getTotalBalanceInRub(client.getId());
+
         model.addAttribute("totalIncome", totalIncome);
         model.addAttribute("totalExpense", totalExpense);
-        model.addAttribute("balance", totalIncome.subtract(totalExpense));
+        model.addAttribute("balance", balance);
         model.addAttribute("incomeCategories", incomeMap);
         model.addAttribute("expenseCategories", expenseMap);
 

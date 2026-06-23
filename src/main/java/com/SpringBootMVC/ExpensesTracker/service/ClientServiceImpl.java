@@ -2,17 +2,15 @@ package com.SpringBootMVC.ExpensesTracker.service;
 
 import com.SpringBootMVC.ExpensesTracker.entity.Client;
 import com.SpringBootMVC.ExpensesTracker.repository.ClientRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class ClientServiceImpl implements ClientService {
 
-    ClientRepository clientRepository;
-    @Autowired
-    public ClientServiceImpl(ClientRepository clientRepository) {
-        this.clientRepository = clientRepository;
-    }
+    private final ClientRepository clientRepository;
 
     @Override
     public void saveClient(Client client) {

@@ -4,6 +4,7 @@ import com.SpringBootMVC.ExpensesTracker.DTO.WebUser;
 import com.SpringBootMVC.ExpensesTracker.entity.User;
 import com.SpringBootMVC.ExpensesTracker.service.UserService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.propertyeditors.StringTrimmerEditor;
 import org.springframework.stereotype.Controller;
@@ -16,13 +17,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
 @Controller
+@RequiredArgsConstructor
 public class SignupController {
     UserService userService;
-
-    @Autowired
-    public SignupController(UserService userService) {
-        this.userService = userService;
-    }
 
     @InitBinder
     public void initBinder(WebDataBinder dataBinder) {

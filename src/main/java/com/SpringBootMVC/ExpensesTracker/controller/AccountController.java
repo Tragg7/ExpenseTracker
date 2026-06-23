@@ -5,34 +5,98 @@ import com.SpringBootMVC.ExpensesTracker.entity.Account;
 import com.SpringBootMVC.ExpensesTracker.entity.Client;
 import com.SpringBootMVC.ExpensesTracker.service.AccountService;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 
 @Controller
+@RequiredArgsConstructor
 @RequestMapping("/accounts")
 public class AccountController {
-
     private final AccountService accountService;
 
-    @Autowired
-    public AccountController(AccountService accountService) {
-        this.accountService = accountService;
-    }
-
     @GetMapping("/list")
-    public String listAccounts(Model model, HttpSession session) {
+    public String listAccounts(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String currency,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false, defaultValue = "active") String status,
+            @RequestParam(required = false, defaultValue = "name_asc") String sort,
+            Model model,
+            HttpSession session) {
+
         Client client = (Client) session.getAttribute("client");
         List<Account> accounts = accountService.findAllAccountsByClientId(client.getId());
+
+        if (search != null && !search.trim().isEmpty()) {
+            String searchLower = search.toLowerCase();
+            accounts = accounts.stream()
+                    .filter(a -> a.getName().toLowerCase().contains(searchLower))
+                    .toList();
+        }
+
+        if (currency != null && !currency.isEmpty()) {
+            accounts = accounts.stream()
+                    .filter(a -> currency.equals(a.getCurrency()))
+                    .toList();
+        }
+
+        if (type != null && !type.isEmpty()) {
+            accounts = accounts.stream()
+                    .filter(a -> type.equals(a.getType()))
+                    .toList();
+        }
+
+        if ("active".equals(status)) {
+            accounts = accounts.stream()
+                    .filter(Account::isActive)
+                    .toList();
+        } else if ("inactive".equals(status)) {
+            accounts = accounts.stream()
+                    .filter(a -> !a.isActive())
+                    .toList();
+        }
+        if (sort != null) {
+            switch (sort) {
+                case "name_asc":
+                    accounts = accounts.stream()
+                            .sorted(Comparator.comparing(Account::getName))
+                            .toList();
+                    break;
+                case "name_desc":
+                    accounts = accounts.stream()
+                            .sorted(Comparator.comparing(Account::getName).reversed())
+                            .toList();
+                    break;
+                case "balance_desc":
+                    accounts = accounts.stream()
+                            .sorted(Comparator.comparing(Account::getBalance).reversed())
+                            .toList();
+                    break;
+                case "balance_asc":
+                    accounts = accounts.stream()
+                            .sorted(Comparator.comparing(Account::getBalance))
+                            .toList();
+                    break;
+            }
+        }
 
         BigDecimal totalBalanceInRub = accountService.getTotalBalanceInRub(client.getId());
 
         model.addAttribute("accounts", accounts);
         model.addAttribute("totalBalanceInRub", totalBalanceInRub);
+
+        model.addAttribute("search", search);
+        model.addAttribute("currency", currency);
+        model.addAttribute("type", type);
+        model.addAttribute("status", status);
+        model.addAttribute("sort", sort);
 
         return "list-accounts";
     }
@@ -74,8 +138,13 @@ public class AccountController {
     }
 
     @GetMapping("/delete")
-    public String deleteAccount(@RequestParam("accountId") int id) {
-        accountService.deleteAccountById(id);
+    public String deleteAccount(@RequestParam("accountId") int id, RedirectAttributes redirectAttributes) {
+        try {
+            accountService.deleteAccountById(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Счёт успешно удалён");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
         return "redirect:/accounts/list";
     }
 }

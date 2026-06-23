@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface IncomeRepository extends JpaRepository<Income, Integer> {
     List<Income> findByClientId(int clientId);
+    List<Income> findByAccountId(int accountId);
 }

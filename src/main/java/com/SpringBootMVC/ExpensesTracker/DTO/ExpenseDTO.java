@@ -27,7 +27,63 @@ public class ExpenseDTO {
 
     private int clientId;
 
+    private int accountId;
+    private int accountName;
+    private int accountCurrency;
+    private int amountInRub;
+
+    private BigDecimal originalAmount;
+    private String originalCurrency;
+
     public ExpenseDTO() {
+    }
+
+    public int getAccountName() {
+        return accountName;
+    }
+
+    public void setAccountName(int accountName) {
+        this.accountName = accountName;
+    }
+
+    public int getAccountCurrency() {
+        return accountCurrency;
+    }
+
+    public void setAccountCurrency(int accountCurrency) {
+        this.accountCurrency = accountCurrency;
+    }
+
+    public int getAmountInRub() {
+        return amountInRub;
+    }
+
+    public void setAmountInRub(int amountInRub) {
+        this.amountInRub = amountInRub;
+    }
+
+    public BigDecimal getOriginalAmount() {
+        return originalAmount;
+    }
+
+    public void setOriginalAmount(BigDecimal originalAmount) {
+        this.originalAmount = originalAmount;
+    }
+
+    public String getOriginalCurrency() {
+        return originalCurrency;
+    }
+
+    public void setOriginalCurrency(String originalCurrency) {
+        this.originalCurrency = originalCurrency;
+    }
+
+    public int getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(int accountId) {
+        this.accountId = accountId;
     }
 
     public int getExpenseId() {

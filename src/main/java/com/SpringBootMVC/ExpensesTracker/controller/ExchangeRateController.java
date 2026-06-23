@@ -1,6 +1,7 @@
 package com.SpringBootMVC.ExpensesTracker.controller;
 
 import com.SpringBootMVC.ExpensesTracker.service.ExchangeRateService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,15 +14,11 @@ import java.math.RoundingMode;
 import java.util.Map;
 
 @Controller
+@RequiredArgsConstructor
 @RequestMapping("/exchange")
 public class ExchangeRateController {
 
     private final ExchangeRateService exchangeRateService;
-
-    @Autowired
-    public ExchangeRateController(ExchangeRateService exchangeRateService) {
-        this.exchangeRateService = exchangeRateService;
-    }
 
     @GetMapping("/test")
     @ResponseBody

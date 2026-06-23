@@ -23,6 +23,10 @@ public class Expense {
     @Transient
     private String time;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "account_id")
+    private Account account;
+
     @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "client_id")
     Client client;
@@ -30,6 +34,22 @@ public class Expense {
     @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "category_id")
     Category category;
+
+    @Column(name = "original_amount", precision = 10, scale = 2)
+    private BigDecimal originalAmount;
+
+    @Column(name = "original_currency", length = 10)
+    private String originalCurrency;
+
+    @Transient
+    private String accountName;
+
+    @Transient
+    private String accountCurrency;
+
+    @Transient
+    private BigDecimal amountInRub;
+
 
     public Expense() {
     }
@@ -40,6 +60,54 @@ public class Expense {
         this.description = description;
         this.client = client;
         this.category = category;
+    }
+
+    public BigDecimal getOriginalAmount() {
+        return originalAmount;
+    }
+
+    public void setOriginalAmount(BigDecimal originalAmount) {
+        this.originalAmount = originalAmount;
+    }
+
+    public String getOriginalCurrency() {
+        return originalCurrency;
+    }
+
+    public void setOriginalCurrency(String originalCurrency) {
+        this.originalCurrency = originalCurrency;
+    }
+
+    public String getAccountName() {
+        return accountName;
+    }
+
+    public void setAccountName(String accountName) {
+        this.accountName = accountName;
+    }
+
+    public String getAccountCurrency() {
+        return accountCurrency;
+    }
+
+    public void setAccountCurrency(String accountCurrency) {
+        this.accountCurrency = accountCurrency;
+    }
+
+    public BigDecimal getAmountInRub() {
+        return amountInRub;
+    }
+
+    public void setAmountInRub(BigDecimal amountInRub) {
+        this.amountInRub = amountInRub;
+    }
+
+    public Account getAccount() {
+        return account;
+    }
+
+    public void setAccount(Account account) {
+        this.account = account;
     }
 
     public int getId() {

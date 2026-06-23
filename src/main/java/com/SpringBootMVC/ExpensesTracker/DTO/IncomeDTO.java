@@ -23,7 +23,47 @@ public class IncomeDTO {
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     private LocalDateTime dateTime;
 
+    private boolean isInitialBalance = false;
     private String description;
+
+    private int accountId;
+    private BigDecimal originalAmount;
+    private String originalCurrency;
+
+    public IncomeDTO() {
+    }
+
+    public boolean isInitialBalance() {
+        return isInitialBalance;
+    }
+
+    public void setInitialBalance(boolean initialBalance) {
+        isInitialBalance = initialBalance;
+    }
+
+    public BigDecimal getOriginalAmount() {
+        return originalAmount;
+    }
+
+    public void setOriginalAmount(BigDecimal originalAmount) {
+        this.originalAmount = originalAmount;
+    }
+
+    public String getOriginalCurrency() {
+        return originalCurrency;
+    }
+
+    public void setOriginalCurrency(String originalCurrency) {
+        this.originalCurrency = originalCurrency;
+    }
+
+    public int getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(int accountId) {
+        this.accountId = accountId;
+    }
 
     public int getIncomeId() {
         return incomeId;

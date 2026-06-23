@@ -4,91 +4,286 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мои счета</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-          rel="stylesheet">
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .account-card {
+            border-left: 4px solid #3498db;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .account-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        }
+        .account-card.type-CARD {
+            border-left-color: #3498db;
+        }
+        .account-card.type-CARD .card-header {
+            background-color: #ebf5fb;
+            border-bottom: 1px solid #d4e6f1;
+            color: #2874a6;
+        }
+        .account-card.type-CASH {
+            border-left-color: #27ae60;
+        }
+        .account-card.type-CASH .card-header {
+            background-color: #f0fdf4;
+            border-bottom: 1px solid #d1fae5;
+            color: #15803d;
+        }
+        .account-card.type-SAVINGS {
+            border-left-color: #f39c12;
+        }
+        .account-card.type-SAVINGS .card-header {
+            background-color: #fef9e7;
+            border-bottom: 1px solid #f9e79f;
+            color: #b7950b;
+        }
+        .account-card.inactive {
+            opacity: 0.6;
+            border-left-color: #95a5a6;
+        }
+        .account-card.inactive .card-header {
+            background-color: #f8f9fa;
+            color: #7f8c8d;
+        }
+
+        /* Баланс */
+        .balance-display {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        .balance-currency {
+            font-size: 1rem;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        /* Блок общего баланса - в стилистике сайта (бирюзовый) */
+        .total-balance-card {
+            background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .total-balance-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(26, 188, 156, 0.3);
+        }
+        .total-balance-card .card-body {
+            padding: 1.5rem;
+        }
+        .total-balance-amount {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        /* Панель фильтров - в том же стиле, что и на странице доходов */
+        .filter-card {
+            border: none;
+            border-radius: 12px;
+        }
+        .filter-card .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .filter-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .filter-header:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Поле поиска */
+        .search-input {
+            border-radius: 8px;
+        }
+    </style>
 </head>
 
 <body id="page-top">
-<div th:replace="fragments/navbar :: navbar('no', 'no', 'no', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes')"></div>
+<div th:replace="~{fragments/navbar :: navbar('no', 'no', 'no', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes')}"></div>
 
 <div class="container mt-3 pt-3">
-    <h2 class="text-center mb-5 mt-4">
-        Мои счета
+    <h2 class="text-center mb-4 mt-4">
+        <i class="fa-solid fa-building-columns me-2"></i>Мои счета
     </h2>
 
-    <div class="text-center mb-5">
-        <a th:href="@{/accounts/showAdd}"
-           class="btn btn-primary shadow-sm">
-            <i class="fa-solid fa-plus"></i>
-            Добавить счёт
-        </a>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-exclamation me-2"></i>
+        <strong>Ошибка:</strong> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
     </div>
 
-    <div class="row justify-content-center mb-5">
-        <div class="col-12 col-md-8 col-lg-5 text-center">
-            <canvas id="accountsChart"></canvas>
-            <div class="card mt-4 shadow-sm">
-                <div class="card-header">
-                    <i class="fa-solid fa-wallet"></i>
-                    Общий баланс
-                </div>
-                <div class="card-body">
-                    <h3 th:text="${totalBalanceInRub + ' ₽'}"></h3>
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i>
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+    </div>
+
+    <div class="row justify-content-center mb-4">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card total-balance-card shadow-sm">
+                <div class="card-body text-center">
+                    <div class="mb-2">
+                        <i class="fa-solid fa-wallet fa-2x"></i>
+                    </div>
+                    <div class="text-uppercase small opacity-75 mb-1">Общий баланс</div>
+                    <div class="total-balance-amount">
+                        <span th:text="${#numbers.formatDecimal(totalBalanceInRub, 1, 2)}">0.00</span> ₽
+                    </div>
+                    <div class="small opacity-75 mt-2">
+                        <span th:text="${#lists.size(accounts)}">0</span> активных счетов
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-4 mb-4"
+    <div class="text-center mb-4">
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a th:href="@{/accounts/showTransfer}"
+               class="btn btn-success shadow-sm">
+                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                Перевод между счетами
+            </a>
+            <a th:href="@{/accounts/showAdd}"
+               class="btn btn-primary shadow-sm">
+                <i class="fa-solid fa-plus"></i>
+                Добавить счёт
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center mb-4">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="card filter-card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center filter-header"
+                     id="filterHeader">
+                    <span><i class="fa-solid fa-filter me-2"></i>Фильтры и поиск</span>
+                    <i class="fa-solid fa-chevron-down" id="filterArrow"></i>
+                </div>
+                <div class="card-body" id="filterBody">
+                    <form method="get" th:action="@{/accounts/list}">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small text-muted">
+                                    <i class="fa-solid fa-magnifying-glass me-1"></i>Поиск по названию
+                                </label>
+                                <input type="text" class="form-control search-input"
+                                       name="search" th:value="${search}"
+                                       placeholder="Введите название счёта...">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small text-muted">
+                                    <i class="fa-solid fa-arrow-down-wide-short me-1"></i>Сортировка
+                                </label>
+                                <select class="form-select" name="sort">
+                                    <option value="name_asc" th:selected="${sort == 'name_asc'}">По имени (А-Я)</option>
+                                    <option value="name_desc" th:selected="${sort == 'name_desc'}">По имени (Я-А)</option>
+                                    <option value="balance_desc" th:selected="${sort == 'balance_desc'}">По балансу ↓</option>
+                                    <option value="balance_asc" th:selected="${sort == 'balance_asc'}">По балансу ↑</option>
+                                </select>
+                            </div>
+
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small text-muted">Валюта</label>
+                                <select class="form-select" name="currency">
+                                    <option value="">Все валюты</option>
+                                    <option value="RUB" th:selected="${currency == 'RUB'}">RUB</option>
+                                    <option value="USD" th:selected="${currency == 'USD'}">USD</option>
+                                    <option value="EUR" th:selected="${currency == 'EUR'}">EUR</option>
+                                    <option value="GBP" th:selected="${currency == 'GBP'}">GBP</option>
+                                    <option value="CNY" th:selected="${currency == 'CNY'}">CNY</option>
+                                </select>
+                            </div>
+
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small text-muted">Тип счёта</label>
+                                <select class="form-select" name="type">
+                                    <option value="">Все типы</option>
+                                    <option value="CARD" th:selected="${type == 'CARD'}">Карта</option>
+                                    <option value="CASH" th:selected="${type == 'CASH'}">Наличные</option>
+                                    <option value="SAVINGS" th:selected="${type == 'SAVINGS'}">Сберегательный</option>
+                                </select>
+                            </div>
+
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small text-muted">Статус</label>
+                                <select class="form-select" name="status">
+                                    <option value="all" th:selected="${status == 'all'}">Все</option>
+                                    <option value="active" th:selected="${status == 'active'}">Активные</option>
+                                    <option value="inactive" th:selected="${status == 'inactive'}">Неактивные</option>
+                                </select>
+                            </div>
+
+                            <div class="col-6 col-md-3 d-flex align-items-end gap-2">
+                                <button type="submit" class="btn btn-success flex-fill">
+                                    <i class="fa-solid fa-check"></i> Применить
+                                </button>
+                                <a th:href="@{/accounts/list}" class="btn btn-outline-secondary" title="Сбросить">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" th:if="${!accounts.isEmpty()}">
+        <div class="col-md-6 col-lg-4 mb-4"
              th:each="account : ${accounts}">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">
-                    <i class="fa-solid fa-building-columns"></i>
-                    <span th:text="${account.name}">
-                        Название счёта
+            <div class="card account-card shadow-sm h-100"
+                 th:classappend="${(!account.active ? 'inactive ' : '') + 'type-' + account.type}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fa-solid me-2"
+                           th:classappend="${account.type == 'CARD' ? 'fa-credit-card' : (account.type == 'CASH' ? 'fa-money-bill-wave' : 'fa-piggy-bank')}"></i>
+                        <span class="fw-bold" th:text="${account.name}">Название</span>
+                    </div>
+                    <span class="badge"
+                          th:classappend="${account.active} ? 'bg-success' : 'bg-secondary'"
+                          th:text="${account.active} ? 'Активен' : 'Неактивен'">
                     </span>
                 </div>
                 <div class="card-body">
-                    <p class="card-text">
+                    <div class="text-center mb-3">
+                        <div class="balance-display">
+                            <span th:text="${#numbers.formatDecimal(account.balance, 1, 2)}">0.00</span>
+                        </div>
+                        <div class="balance-currency" th:text="${account.currency}">RUB</div>
+                    </div>
+                    <hr>
+                    <div class="small text-muted mb-2">
                         <strong>Тип:</strong>
-                        <span th:text="${account.type == 'CASH'
-                            ? 'Наличные'
-                            : (account.type == 'CARD'
-                            ? 'Банковская карта'
-                            : 'Сберегательный счёт')}">
-                        </span>
-                    </p>
-                    <p class="card-text">
-                        <strong>Баланс:</strong>
-                        <span class="fw-bold"
-                              th:text="${account.balance}">
-                        </span>
-                        <span th:text="${account.currency}">
-                        </span>
-                    </p>
-                    <p class="card-text" th:if="${account.description != null and !account.description.isEmpty()}">
+                        <span th:text="${account.type == 'CASH' ? '💵 Наличные' : (account.type == 'CARD' ? '💳 Карта' : '🏦 Сберегательный')}"></span>
+                    </div>
+                    <div class="small text-muted" th:if="${account.description != null and !account.description.isEmpty()}">
                         <strong>Описание:</strong>
-                        <span th:text="${account.description}">
-                        </span>
-                    </p>
+                        <span th:text="${account.description}"></span>
+                    </div>
                 </div>
                 <div class="card-footer bg-white border-0">
                     <div class="d-flex gap-2">
                         <a th:href="@{/accounts/showUpdate(accountId=${account.id})}"
-                           class="btn btn-primary btn-sm flex-fill">
-                            <i class="fas fa-edit"></i>
-                            Изменить
+                           class="btn btn-warning btn-sm flex-fill">
+                            <i class="fas fa-edit"></i> Изменить
                         </a>
                         <a th:href="@{/accounts/delete(accountId=${account.id})}"
                            class="btn btn-danger btn-sm flex-fill"
                            onclick="return confirm('Вы уверены, что хотите удалить этот счёт?')">
-                            <i class="fas fa-trash"></i>
-                            Удалить
+                            <i class="fas fa-trash"></i> Удалить
                         </a>
                     </div>
                 </div>
@@ -97,20 +292,56 @@
     </div>
 
     <div th:if="${accounts.isEmpty()}">
-        <div class="card shadow-sm">
-            <div class="card-body text-center">
-                <i class="fa-solid fa-wallet fa-3x mb-3"></i>
-                <h5 class="mb-3">
-                    У вас пока нет счетов
+        <div class="card shadow-sm border-0 text-center py-5">
+            <div class="card-body">
+                <i class="fa-solid fa-wallet fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">
+                    <span th:if="${search != null and !search.isEmpty()}">Счета не найдены</span>
+                    <span th:if="${search == null or search.isEmpty()}">У вас пока нет счетов</span>
                 </h5>
-                <a th:href="@{/accounts/showAdd}" class="btn btn-primary">
-                    Создать первый счёт
+                <p class="text-muted">
+                    <span th:if="${search != null and !search.isEmpty()}">Попробуйте изменить параметры поиска</span>
+                    <span th:if="${search == null or search.isEmpty()}">Добавьте первый счёт, чтобы начать учёт финансов</span>
+                </p>
+                <a th:if="${search == null or search.isEmpty()}"
+                   th:href="@{/accounts/showAdd}" class="btn btn-primary">
+                    <i class="fa-solid fa-plus"></i> Создать первый счёт
+                </a>
+                <a th:if="${search != null and !search.isEmpty()}"
+                   th:href="@{/accounts/list}" class="btn btn-outline-secondary">
+                    <i class="fa-solid fa-rotate-left"></i> Сбросить фильтры
                 </a>
             </div>
         </div>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const header = document.getElementById("filterHeader");
+        const body = document.getElementById("filterBody");
+        const arrow = document.getElementById("filterArrow");
+
+        // Восстановление состояния
+        const isCollapsed = localStorage.getItem('accountsFilterCollapsed') === 'true';
+        if (isCollapsed) {
+            body.style.display = 'none';
+            arrow.classList.add("fa-rotate-180");
+        }
+
+        header.addEventListener("click", function () {
+            if (body.style.display === 'none') {
+                body.style.display = 'block';
+                arrow.classList.remove("fa-rotate-180");
+                localStorage.setItem('accountsFilterCollapsed', 'false');
+            } else {
+                body.style.display = 'none';
+                arrow.classList.add("fa-rotate-180");
+                localStorage.setItem('accountsFilterCollapsed', 'true');
+            }
+        });
+    });
+</script>
 </body>
 </html>

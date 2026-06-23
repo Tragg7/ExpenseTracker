@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -16,15 +17,10 @@ import org.springframework.stereotype.Controller;
 import java.io.IOException;
 
 @Controller
+@RequiredArgsConstructor
 public class CustomeAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
-    UserService userService;
-    ClientService clientService;
-
-    @Autowired
-    public CustomeAuthenticationSuccessHandler(UserService userService, ClientService clientService) {
-        this.userService = userService;
-        this.clientService = clientService;
-    }
+    private final UserService userService;
+    private final ClientService clientService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response

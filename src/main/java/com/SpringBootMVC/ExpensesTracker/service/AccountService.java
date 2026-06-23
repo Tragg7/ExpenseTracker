@@ -1,6 +1,8 @@
 package com.SpringBootMVC.ExpensesTracker.service;
 
 import com.SpringBootMVC.ExpensesTracker.DTO.AccountDTO;
+import com.SpringBootMVC.ExpensesTracker.DTO.IncomeDTO;
+import com.SpringBootMVC.ExpensesTracker.DTO.TransferDTO;
 import com.SpringBootMVC.ExpensesTracker.entity.Account;
 
 import java.math.BigDecimal;
@@ -14,4 +16,9 @@ public interface AccountService {
     void update(AccountDTO accountDTO);
     void deleteAccountById(int id);
     BigDecimal getTotalBalanceInRub(int clientId);
+    boolean hasSufficientFunds(int accountId, BigDecimal amount);
+    void addIncomeToAccount(int accountId, BigDecimal amount);
+    boolean subtractExpenseFromAccount(int accountId, BigDecimal amount);
+    void returnExpenseToAccount(int accountId, BigDecimal amount);
+    void removeIncomeFromAccount(int accountId, BigDecimal amount);
 }

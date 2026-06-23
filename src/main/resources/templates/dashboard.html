@@ -18,7 +18,7 @@
 </head>
 
 <body id="page-top">
-<div th:replace="fragments/navbar :: navbar('no', 'no', 'no', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes')"></div>
+<div th:replace="~{fragments/navbar :: navbar('no', 'no', 'no', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes', 'yes')}"></div>
 <div class="container mt-3 pt-3">
 
     <h2 class="text-center mb-5 mt-4">
@@ -52,6 +52,17 @@
                                     th:each="category : ${categories}"
                                     th:value="${category.name}"
                                     th:text="${category.name}">
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>Счёт</label>
+                        <select class="form-select" name="accountId">
+                            <option value="">Все счета</option>
+                            <option th:each="account : ${accounts}"
+                                    th:value="${account.id}"
+                                    th:selected="${selectedAccountId != null && selectedAccountId == account.id}"
+                                    th:text="${account.name + ' (' + #numbers.formatDecimal(account.balance, 1, 2) + ' ' + account.currency + ')'}">
                             </option>
                         </select>
                     </div>
@@ -96,7 +107,35 @@
             </form>
         </div>
     </div>
-    <div class="row justify-content-center">
+        <div th:if="${totalElements == 0}"
+             class="card shadow-sm border-0 text-center py-5">
+
+            <i class="fa-solid fa-wallet fa-4x text-secondary mb-4"></i>
+
+            <h3 class="mb-3">
+                У вас ещё нет операций подобного типа
+            </h3>
+
+            <p class="text-muted mb-4">
+                Добавьте первую трату или доход, чтобы начать отслеживать свои финансы.
+            </p>
+
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+
+                <a th:href="@{/showAdd}"
+                   class="btn btn-primary">
+                    <i class="fa-solid fa-minus me-2"></i>
+                    Добавить трату
+                </a>
+
+                <a th:href="@{/income/showAdd}"
+                   class="btn btn-success">
+                    <i class="fa-solid fa-plus me-2"></i>
+                    Добавить доход
+                </a>
+            </div>
+        </div>
+    <div th:if="${totalElements > 0}" class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-4 text-center">
             <canvas id="financeChart"></canvas>
             <div class="card mt-5">
@@ -105,25 +144,49 @@
                 </div>
                 <div class="list-group list-group-flush">
                     <div class="list-group-item d-flex justify-content-between align-items-center"
-                            th:each="operation : ${operations}">
+                         th:each="operation : ${operations}">
                         <div class="operation-info">
-                            <div class="fw-bold"
-                                 th:text="${operation.category}">
+                            <div class="fw-bold" th:text="${operation.category}">Категория</div>
+                            <div th:if="${operation.accountName != null and operation.accountName != 'Без счёта'}"
+                                 class="text-muted" style="font-size: 0.85rem;">
+                                <i class="fa-solid fa-wallet me-1"></i>
+                                <span th:text="${operation.accountName}">Счёт</span>
                             </div>
                             <small class="text-muted"
                                    th:text="${#temporals.format(operation.dateTime,'dd.MM.yyyy HH:mm')}">
                             </small>
-                        </div>
-                        <div class="operation-amount text-nowrap">
-                            <span
-                                th:if="${operation.type == 'INCOME'}"
-                                class="text-success fw-bold"
-                                th:text="'+' + ${operation.amount} + '₽'">
+                            </div>
+                            <div class="operation-amount text-nowrap">
+                                <span th:if="${operation.type == 'INCOME'}">
+                                <span th:if="${operation.accountCurrency != 'RUB'}"
+                                      class="text-success fw-bold"
+                                      th:text="'+' + ${#numbers.formatDecimal(operation.amount, 1, 2)} + ' ' + ${operation.accountCurrency}">
+                                </span>
+                                <span th:if="${operation.accountCurrency == 'RUB'}"
+                                      class="text-success fw-bold"
+                                      th:text="'+' + ${#numbers.formatDecimal(operation.amount, 1, 2)} + ' ₽'">
+                                </span>
+                                <div th:if="${operation.accountCurrency != 'RUB'}"
+                                     class="text-muted" style="font-size: 0.8rem;">
+                                    ≈ +<span th:text="${#numbers.formatDecimal(operation.amountInRub, 1, 2)}">0.00</span> ₽
+                                </div>
                             </span>
-                            <span
-                                th:if="${operation.type == 'EXPENSE'}"
-                                class="fw-bold"
-                                th:text="'-' + ${operation.amount} + '₽'">
+                            <span th:if="${operation.type == 'EXPENSE'}">
+                            <span th:if="${operation.accountCurrency != 'RUB'}"
+                                  class="text-danger fw-bold"
+                                  th:text="'-' + ${#numbers.formatDecimal(operation.amount, 1, 2)} + ' ' + ${operation.accountCurrency}">
+                            </span>
+                            <span th:if="${operation.accountCurrency == 'RUB'}"
+                                  class="text-danger fw-bold"
+                                  th:text="'-' + ${#numbers.formatDecimal(operation.amount, 1, 2)} + ' ₽'">
+                            </span>
+                            <div th:if="${operation.accountCurrency != 'RUB'}"
+                                 class="text-muted" style="font-size: 0.8rem;">
+                                ≈ -
+                                <span th:text="${#numbers.formatDecimal(operation.amountInRub, 1, 2)}">
+                                    0.00
+                                </span> ₽
+                            </div>
                             </span>
                         </div>
                     </div>
@@ -131,7 +194,15 @@
                 <nav th:if="${totalElements > 5}" class="card-footer bg-white">
                     <ul class="pagination justify-content-center mb-0">
                         <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
-                            <a class="page-link" th:href="@{/dashboard(page=${currentPage - 1}, operationType=${param.operationType}, category=${param.category}, amountFrom=${param.amountFrom}, amountTo=${param.amountTo}, dateFrom=${param.dateFrom}, dateTo=${param.dateTo})}">
+                            <a class="page-link"
+                               th:href="@{/dashboard(page=${currentPage - 1},
+                                     operationType=${param.operationType},
+                                     category=${param.category},
+                                     amountFrom=${param.amountFrom},
+                                     amountTo=${param.amountTo},
+                                     dateFrom=${param.dateFrom},
+                                     dateTo=${param.dateTo},
+                                     accountId=${param.accountId})}">
                                 <i class="fa-solid fa-chevron-left"></i>
                             </a>
                         </li>
@@ -139,7 +210,15 @@
                             <span class="page-link" th:text="${currentPage}">1</span>
                         </li>
                         <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
-                            <a class="page-link" th:href="@{/dashboard(page=${currentPage + 1}, operationType=${param.operationType}, category=${param.category}, amountFrom=${param.amountFrom}, amountTo=${param.amountTo}, dateFrom=${param.dateFrom}, dateTo=${param.dateTo})}">
+                            <a class="page-link"
+                               th:href="@{/dashboard(page=${currentPage + 1},
+                                     operationType=${param.operationType},
+                                     category=${param.category},
+                                     amountFrom=${param.amountFrom},
+                                     amountTo=${param.amountTo},
+                                     dateFrom=${param.dateFrom},
+                                     dateTo=${param.dateTo},
+                                     accountId=${param.accountId})}">
                                 <i class="fa-solid fa-chevron-right"></i>
                             </a>
                         </li>
@@ -148,7 +227,6 @@
             </div>
         </div>
     </div>
-</div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script th:inline="javascript">
 
@@ -176,8 +254,7 @@
     ...expenseData
     ];
 
-    const balance =
-    '[[${balance}]]';
+    const balance = [[${#numbers.formatDecimal(balance, 1, 2)}]];
 
     const centerText = {
 
@@ -218,26 +295,30 @@
         }
     };
 
-    new Chart(
-    document.getElementById('financeChart'),
-    {
-        type: 'doughnut',
+    const chartCanvas = document.getElementById('financeChart');
 
-        data: {
-            labels: labels,
+    if (chartCanvas) {
+        new Chart(
+            chartCanvas,
+            {
+                type: 'doughnut',
 
-            datasets: [{
-                data: values
-            }]
-        },
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values
+                    }]
+                },
 
-        plugins: [centerText],
+                plugins: [centerText],
 
-        options: {
-            responsive: true,
-            cutout: '65%'
-        }
-    });
+                options: {
+                    responsive: true,
+                    cutout: '65%'
+                }
+            }
+        );
+    }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
