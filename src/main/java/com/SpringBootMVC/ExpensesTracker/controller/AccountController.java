@@ -32,7 +32,11 @@ public class AccountController {
             HttpSession session) {
 
         Client client = (Client) session.getAttribute("client");
-        List<Account> accounts = accountService.findAllAccountsByClientId(client.getId());
+
+        List<Account> allClientAccounts = accountService.findAllAccountsByClientId(client.getId());
+        model.addAttribute("allClientAccounts", allClientAccounts);
+
+        List<Account> accounts = new java.util.ArrayList<>(allClientAccounts);
 
         if (search != null && !search.trim().isEmpty()) {
             String searchLower = search.toLowerCase();
@@ -62,6 +66,7 @@ public class AccountController {
                     .filter(a -> !a.isActive())
                     .toList();
         }
+
         if (sort != null) {
             switch (sort) {
                 case "name_asc":
@@ -91,7 +96,6 @@ public class AccountController {
 
         model.addAttribute("accounts", accounts);
         model.addAttribute("totalBalanceInRub", totalBalanceInRub);
-
         model.addAttribute("search", search);
         model.addAttribute("currency", currency);
         model.addAttribute("type", type);

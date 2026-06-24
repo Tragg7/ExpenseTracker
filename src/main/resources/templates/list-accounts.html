@@ -48,8 +48,6 @@
             background-color: #f8f9fa;
             color: #7f8c8d;
         }
-
-        /* Баланс */
         .balance-display {
             font-size: 1.8rem;
             font-weight: 700;
@@ -61,7 +59,6 @@
             font-weight: 500;
         }
 
-        /* Блок общего баланса - в стилистике сайта (бирюзовый) */
         .total-balance-card {
             background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);
             color: white;
@@ -81,7 +78,6 @@
             font-weight: 700;
         }
 
-        /* Панель фильтров - в том же стиле, что и на странице доходов */
         .filter-card {
             border: none;
             border-radius: 12px;
@@ -106,6 +102,69 @@
         /* Поле поиска */
         .search-input {
             border-radius: 8px;
+        }
+
+        .search-wrapper {
+            position: relative;
+        }
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        .search-suggestions.show {
+            display: block;
+        }
+        .suggestion-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background-color 0.15s ease;
+        }
+        .suggestion-item:hover {
+            background-color: #e8f8f5;
+        }
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        .suggestion-item .suggestion-icon {
+            font-size: 1.1rem;
+            color: #1abc9c;
+        }
+        .suggestion-item .suggestion-name {
+            flex-grow: 1;
+            color: #2c3e50;
+        }
+        .suggestion-item .suggestion-currency {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+        .suggestion-item .highlight {
+            font-weight: 700;
+            color: #1abc9c;
+            background-color: #e8f8f5;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+        .suggestion-empty {
+            padding: 15px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -179,9 +238,16 @@
                                 <label class="form-label small text-muted">
                                     <i class="fa-solid fa-magnifying-glass me-1"></i>Поиск по названию
                                 </label>
-                                <input type="text" class="form-control search-input"
-                                       name="search" th:value="${search}"
-                                       placeholder="Введите название счёта...">
+                                <div class="search-wrapper">
+                                    <input type="text"
+                                           id="accountSearchInput"
+                                           class="form-control search-input"
+                                           name="search"
+                                           th:value="${search}"
+                                           placeholder="Введите название счёта..."
+                                           autocomplete="off">
+                                    <div id="accountSearchSuggestions" class="search-suggestions"></div>
+                                </div>
                             </div>
                             <div class="col-12 col-md-6">
                                 <label class="form-label small text-muted">
@@ -341,6 +407,102 @@
                 localStorage.setItem('accountsFilterCollapsed', 'true');
             }
         });
+    });
+</script>
+
+<script th:inline="javascript">
+    // Массив всех счетов для автодополнения
+    const allAccounts = [
+        /*[# th:each="acc, stat : ${allClientAccounts}"]*/
+        {
+            id: /*[[${acc.id}]]*/ 0,
+            name: /*[[${acc.name}]]*/ '',
+            currency: /*[[${acc.currency}]]*/ '',
+            type: /*[[${acc.type}]]*/ '',
+            balance: /*[[${acc.balance}]]*/ 0
+        }/*[(${stat.last} ? '' : ',')]*/
+        /*[/]*/
+    ];
+
+    const searchInput = document.getElementById('accountSearchInput');
+    const suggestionsBox = document.getElementById('accountSearchSuggestions');
+    const searchForm = searchInput.closest('form');
+
+    // Функция получения иконки по типу счёта
+    function getAccountIcon(type) {
+        switch (type) {
+            case 'CARD': return 'fa-credit-card';
+            case 'CASH': return 'fa-money-bill-wave';
+            case 'SAVINGS': return 'fa-piggy-bank';
+            default: return 'fa-wallet';
+        }
+    }
+
+    // Функция подсветки совпадений
+    function highlightMatch(text, query) {
+        if (!query) return text;
+        const idx = text.toLowerCase().indexOf(query.toLowerCase());
+        if (idx === -1) return text;
+        return text.substring(0, idx) +
+               '<span class="highlight">' +
+               text.substring(idx, idx + query.length) +
+               '</span>' +
+               text.substring(idx + query.length);
+    }
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+
+        if (query.length < 1) {
+            suggestionsBox.classList.remove('show');
+            return;
+        }
+
+        // Фильтруем счета по совпадению
+        const matches = allAccounts.filter(function(acc) {
+            return acc.name.toLowerCase().includes(query);
+        }).slice(0, 8);
+
+        if (matches.length === 0) {
+            suggestionsBox.innerHTML = '<div class="suggestion-empty"><i class="fa-solid fa-search me-1"></i> Ничего не найдено</div>';
+        } else {
+            suggestionsBox.innerHTML = matches.map(function(acc) {
+                const icon = getAccountIcon(acc.type);
+                const highlightedName = highlightMatch(acc.name, query);
+                return '<div class="suggestion-item" data-name="' + acc.name.replace(/"/g, '&quot;') + '">' +
+                       '<i class="fa-solid ' + icon + ' suggestion-icon"></i>' +
+                       '<span class="suggestion-name">' + highlightedName + '</span>' +
+                       '<span class="suggestion-currency">' + acc.balance.toFixed(2) + ' ' + acc.currency + '</span>' +
+                       '</div>';
+            }).join('');
+        }
+
+        suggestionsBox.classList.add('show');
+
+        // Обработчики кликов по подсказкам
+        suggestionsBox.querySelectorAll('.suggestion-item').forEach(function(item) {
+            item.addEventListener('click', function() {
+                const name = this.getAttribute('data-name');
+                searchInput.value = name;
+                suggestionsBox.classList.remove('show');
+                // Автоотправка формы
+                searchForm.submit();
+            });
+        });
+    });
+
+    // Закрытие подсказок при клике вне поля
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+            suggestionsBox.classList.remove('show');
+        }
+    });
+
+    // Закрытие по Escape
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            suggestionsBox.classList.remove('show');
+        }
     });
 </script>
 </body>
